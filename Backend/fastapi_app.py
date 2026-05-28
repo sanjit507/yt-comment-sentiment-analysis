@@ -1,26 +1,36 @@
-# app.py
-
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend before importing pyplot
 
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse, StreamingResponse
 import io
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import mlflow
-import numpy as np
 import joblib
 import re
 import pandas as pd
 from pathlib import Path
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from mlflow.tracking import MlflowClient
 import matplotlib.dates as mdates
+import os
+from urllib.parse import urlparse, parse_qs
+import requests
+from dotenv import load_dotenv
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+app = FastAPI()
+
+load_dotenv()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def configure_local_mlflow_tracking() -> str:
@@ -30,8 +40,8 @@ def configure_local_mlflow_tracking() -> str:
     mlruns_dir.mkdir(parents=True, exist_ok=True)
     return mlruns_dir.resolve().as_uri()
 
-# Define the preprocessing function
-def preprocess_comment(comment):
+
+def preprocess_comment(comment: str) -> str:
     """Apply preprocessing transformations to a comment."""
     try:
         # Convert to lowercase
@@ -59,13 +69,13 @@ def preprocess_comment(comment):
         print(f"Error in preprocessing comment: {e}")
         return comment
 
-# Load the model and vectorizer from the model registry and local storage
-def load_model_and_vectorizer(model_name, model_version, vectorizer_path):
-    # Set MLflow tracking URI to your server
+
+def load_model_and_vectorizer(model_name: str, model_version: str, vectorizer_path: str):
+    """Load the MLflow model and TF-IDF vectorizer."""
     mlflow.set_tracking_uri(configure_local_mlflow_tracking())
     model_uri = f"models:/{model_name}/{model_version}"
     model = mlflow.pyfunc.load_model(model_uri)
-    vectorizer = joblib.load(vectorizer_path)  # Load the vectorizer
+    vectorizer = joblib.load(vectorizer_path)
     return model, vectorizer
 
 
@@ -75,7 +85,69 @@ def build_model_input(preprocessed_comments):
     feature_names = vectorizer.get_feature_names_out()
     return pd.DataFrame(transformed_comments.toarray(), columns=feature_names)
 
-# Initialize the model and vectorizer
+
+def resolve_youtube_video_id(video_id: str | None, video_url: str | None) -> str:
+    if video_id:
+        return video_id.strip()
+
+    if not video_url:
+        return ''
+
+    try:
+        parsed = urlparse(video_url)
+        hostname = parsed.hostname or ''
+        hostname = hostname.replace('www.', '')
+        if hostname == 'youtu.be':
+            return parsed.path.lstrip('/')
+        if 'youtube.com' in hostname:
+            if parsed.path.startswith('/watch'):
+                return parse_qs(parsed.query).get('v', [''])[0]
+            if parsed.path.startswith('/shorts/'):
+                return parsed.path.split('/shorts/', 1)[1].split('/')[0]
+        return ''
+    except Exception:
+        return ''
+
+
+def fetch_youtube_comments(video_id: str, api_key: str, max_comments: int) -> list[str]:
+    comments: list[str] = []
+    next_page_token = None
+
+    while len(comments) < max_comments:
+        params = {
+            'part': 'snippet',
+            'videoId': video_id,
+            'maxResults': 100,
+            'textFormat': 'plainText',
+            'key': api_key,
+        }
+        if next_page_token:
+            params['pageToken'] = next_page_token
+
+        response = requests.get(
+            'https://www.googleapis.com/youtube/v3/commentThreads',
+            params=params,
+            timeout=20,
+        )
+        if response.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"YouTube API error: {response.text}")
+
+        payload = response.json()
+        for item in payload.get('items', []):
+            snippet = item.get('snippet', {}).get('topLevelComment', {}).get('snippet', {})
+            text = snippet.get('textDisplay') or snippet.get('textOriginal')
+            if text:
+                comments.append(text)
+            if len(comments) >= max_comments:
+                break
+
+        next_page_token = payload.get('nextPageToken')
+        if not next_page_token:
+            break
+
+    return comments
+
+
 repo_root = Path(__file__).resolve().parents[1]
 model, vectorizer = load_model_and_vectorizer(
     "yt_chrome_plugin_model",
@@ -83,77 +155,64 @@ model, vectorizer = load_model_and_vectorizer(
     str(repo_root / "tfidf_vectorizer.pkl"),
 )
 
-@app.route('/')
-def home():
-    return "Welcome to our flask api"
 
-@app.route('/predict_with_timestamps', methods=['POST'])
-def predict_with_timestamps():
-    data = request.json
-    comments_data = data.get('comments')
-    
+@app.get("/", response_class=PlainTextResponse)
+def home():
+    return "Welcome to our fastapi api"
+
+
+@app.post("/predict_with_timestamps")
+def predict_with_timestamps(payload: dict):
+    comments_data = payload.get('comments')
     if not comments_data:
-        return jsonify({"error": "No comments provided"}), 400
+        raise HTTPException(status_code=400, detail="No comments provided")
 
     try:
         comments = [item['text'] for item in comments_data]
         timestamps = [item['timestamp'] for item in comments_data]
 
-        # Preprocess each comment before vectorizing
         preprocessed_comments = [preprocess_comment(comment) for comment in comments]
-        
-        # Transform comments using the vectorizer and match the logged MLflow schema
         transformed_comments = build_model_input(preprocessed_comments)
-        
-        # Make predictions
-        predictions = model.predict(transformed_comments).tolist()  # Convert to list
-        
-        # Convert predictions to strings for consistency
+
+        predictions = model.predict(transformed_comments).tolist()
         predictions = [str(pred) for pred in predictions]
     except Exception as e:
-        return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
-    
-    # Return the response with original comments, predicted sentiments, and timestamps
-    response = [{"comment": comment, "sentiment": sentiment, "timestamp": timestamp} for comment, sentiment, timestamp in zip(comments, predictions, timestamps)]
-    return jsonify(response)
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.json
-    comments = data.get('comments')
-    
+    return [
+        {"comment": comment, "sentiment": sentiment, "timestamp": timestamp}
+        for comment, sentiment, timestamp in zip(comments, predictions, timestamps)
+    ]
+
+
+@app.post("/predict")
+def predict(payload: dict):
+    comments = payload.get('comments')
     if not comments:
-        return jsonify({"error": "No comments provided"}), 400
+        raise HTTPException(status_code=400, detail="No comments provided")
 
     try:
-        # Preprocess each comment before vectorizing
         preprocessed_comments = [preprocess_comment(comment) for comment in comments]
-        
-        # Transform comments using the vectorizer and match the logged MLflow schema
         transformed_comments = build_model_input(preprocessed_comments)
-        
-        # Make predictions
-        predictions = model.predict(transformed_comments).tolist()  # Convert to list
-        
-        # Convert predictions to strings for consistency
+
+        predictions = model.predict(transformed_comments).tolist()
         predictions = [str(pred) for pred in predictions]
     except Exception as e:
-        return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
-    
-    # Return the response with original comments and predicted sentiments
-    response = [{"comment": comment, "sentiment": sentiment} for comment, sentiment in zip(comments, predictions)]
-    return jsonify(response)
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-@app.route('/generate_chart', methods=['POST'])
-def generate_chart():
+    return [
+        {"comment": comment, "sentiment": sentiment}
+        for comment, sentiment in zip(comments, predictions)
+    ]
+
+
+@app.post("/generate_chart")
+def generate_chart(payload: dict):
     try:
-        data = request.get_json()
-        sentiment_counts = data.get('sentiment_counts')
-        
+        sentiment_counts = payload.get('sentiment_counts')
         if not sentiment_counts:
-            return jsonify({"error": "No sentiment counts provided"}), 400
+            raise HTTPException(status_code=400, detail="No sentiment counts provided")
 
-        # Prepare data for the pie chart
         labels = ['Positive', 'Neutral', 'Negative']
         sizes = [
             int(sentiment_counts.get('1', 0)),
@@ -162,10 +221,9 @@ def generate_chart():
         ]
         if sum(sizes) == 0:
             raise ValueError("Sentiment counts sum to zero")
-        
-        colors = ['#36A2EB', '#C9CBCF', '#FF6384']  # Blue, Gray, Red
 
-        # Generate the pie chart
+        colors = ['#36A2EB', '#C9CBCF', '#FF6384']
+
         plt.figure(figsize=(6, 6))
         plt.pie(
             sizes,
@@ -175,36 +233,30 @@ def generate_chart():
             startangle=140,
             textprops={'color': 'w'}
         )
-        plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        plt.axis('equal')
 
-        # Save the chart to a BytesIO object
         img_io = io.BytesIO()
         plt.savefig(img_io, format='PNG', transparent=True)
         img_io.seek(0)
         plt.close()
 
-        # Return the image as a response
-        return send_file(img_io, mimetype='image/png')
+        return StreamingResponse(img_io, media_type='image/png')
+    except HTTPException:
+        raise
     except Exception as e:
-        app.logger.error(f"Error in /generate_chart: {e}")
-        return jsonify({"error": f"Chart generation failed: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Chart generation failed: {str(e)}")
 
-@app.route('/generate_wordcloud', methods=['POST'])
-def generate_wordcloud():
+
+@app.post("/generate_wordcloud")
+def generate_wordcloud(payload: dict):
     try:
-        data = request.get_json()
-        comments = data.get('comments')
-
+        comments = payload.get('comments')
         if not comments:
-            return jsonify({"error": "No comments provided"}), 400
+            raise HTTPException(status_code=400, detail="No comments provided")
 
-        # Preprocess comments
         preprocessed_comments = [preprocess_comment(comment) for comment in comments]
-
-        # Combine all comments into a single string
         text = ' '.join(preprocessed_comments)
 
-        # Generate the word cloud
         wordcloud = WordCloud(
             width=800,
             height=400,
@@ -214,63 +266,47 @@ def generate_wordcloud():
             collocations=False
         ).generate(text)
 
-        # Save the word cloud to a BytesIO object
         img_io = io.BytesIO()
         wordcloud.to_image().save(img_io, format='PNG')
         img_io.seek(0)
 
-        # Return the image as a response
-        return send_file(img_io, mimetype='image/png')
+        return StreamingResponse(img_io, media_type='image/png')
+    except HTTPException:
+        raise
     except Exception as e:
-        app.logger.error(f"Error in /generate_wordcloud: {e}")
-        return jsonify({"error": f"Word cloud generation failed: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Word cloud generation failed: {str(e)}")
 
-@app.route('/generate_trend_graph', methods=['POST'])
-def generate_trend_graph():
+
+@app.post("/generate_trend_graph")
+def generate_trend_graph(payload: dict):
     try:
-        data = request.get_json()
-        sentiment_data = data.get('sentiment_data')
-
+        sentiment_data = payload.get('sentiment_data')
         if not sentiment_data:
-            return jsonify({"error": "No sentiment data provided"}), 400
+            raise HTTPException(status_code=400, detail="No sentiment data provided")
 
-        # Convert sentiment_data to DataFrame
         df = pd.DataFrame(sentiment_data)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-        # Set the timestamp as the index
         df.set_index('timestamp', inplace=True)
-
-        # Ensure the 'sentiment' column is numeric
         df['sentiment'] = df['sentiment'].astype(int)
 
-        # Map sentiment values to labels
         sentiment_labels = {-1: 'Negative', 0: 'Neutral', 1: 'Positive'}
 
-        # Resample the data over monthly intervals and count sentiments
         monthly_counts = df.resample('M')['sentiment'].value_counts().unstack(fill_value=0)
-
-        # Calculate total counts per month
         monthly_totals = monthly_counts.sum(axis=1)
-
-        # Calculate percentages
         monthly_percentages = (monthly_counts.T / monthly_totals).T * 100
 
-        # Ensure all sentiment columns are present
         for sentiment_value in [-1, 0, 1]:
             if sentiment_value not in monthly_percentages.columns:
                 monthly_percentages[sentiment_value] = 0
 
-        # Sort columns by sentiment value
         monthly_percentages = monthly_percentages[[-1, 0, 1]]
 
-        # Plotting
         plt.figure(figsize=(12, 6))
 
         colors = {
-            -1: 'red',     # Negative sentiment
-            0: 'gray',     # Neutral sentiment
-            1: 'green'     # Positive sentiment
+            -1: 'red',
+            0: 'gray',
+            1: 'green'
         }
 
         for sentiment_value in [-1, 0, 1]:
@@ -289,24 +325,37 @@ def generate_trend_graph():
         plt.grid(True)
         plt.xticks(rotation=45)
 
-        # Format the x-axis dates
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
         plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=12))
 
         plt.legend()
         plt.tight_layout()
 
-        # Save the trend graph to a BytesIO object
         img_io = io.BytesIO()
         plt.savefig(img_io, format='PNG')
         img_io.seek(0)
         plt.close()
 
-        # Return the image as a response
-        return send_file(img_io, mimetype='image/png')
+        return StreamingResponse(img_io, media_type='image/png')
+    except HTTPException:
+        raise
     except Exception as e:
-        app.logger.error(f"Error in /generate_trend_graph: {e}")
-        return jsonify({"error": f"Trend graph generation failed: {str(e)}"}), 500
+        raise HTTPException(status_code=500, detail=f"Trend graph generation failed: {str(e)}")
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+@app.get("/youtube/comments")
+def youtube_comments(
+    video_id: str | None = Query(default=None),
+    video_url: str | None = Query(default=None),
+    max_comments: int = Query(default=500, ge=1, le=2000),
+):
+    api_key = os.getenv('YOUTUBE_API_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Missing YOUTUBE_API_KEY in the environment")
+
+    resolved_id = resolve_youtube_video_id(video_id, video_url)
+    if not resolved_id:
+        raise HTTPException(status_code=400, detail="Provide a valid video_id or video_url")
+
+    comments = fetch_youtube_comments(resolved_id, api_key, max_comments)
+    return {"video_id": resolved_id, "count": len(comments), "comments": comments}

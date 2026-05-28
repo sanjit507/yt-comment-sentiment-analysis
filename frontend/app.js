@@ -1,4 +1,4 @@
-const defaultEndpoint = 'http://127.0.0.1:5000/predict';
+const defaultEndpoint = 'http://127.0.0.1:8000/predict';
 
 const endpointInput = document.getElementById('endpoint');
 const commentsInput = document.getElementById('comments');

@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Comment Sentiment Helper",
+  "name": "YouTube Comment Analysis",
   "version": "1.0.0",
-  "description": "Scrape visible YouTube comments and send them to the local Flask sentiment API.",
+  "description": "Scan visible YouTube comments and send them to the local sentiment API.",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "YouTube Comment Sentiment Helper"
+    "default_title": "YouTube Comment Analysis"
   },
   "permissions": [
     "activeTab",
@@ -14,8 +14,8 @@
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "http://127.0.0.1:5000/*",
-    "http://localhost:5000/*"
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
   ],
   "content_scripts": [
     {

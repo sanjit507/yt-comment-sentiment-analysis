@@ -3,93 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>More - YouTube Comment Sentiment Helper</title>
+  <title>Comment Analysis - YouTube Sentiment Helper</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="more.css" />
 </head>
 <body>
   <main class="page-shell">
     <header class="page-header">
-      <div>
-        <p class="eyebrow">Extension settings</p>
-        <h1>More</h1>
-        <p class="lede">Configure the local API, understand the flow, and keep the extension ready for demo or production use.</p>
+      <div class="brand">
+        <span class="brand-mark">YS</span>
+        <div>
+          <p class="eyebrow">Analysis workspace</p>
+          <h1>Comment analysis</h1>
+          <p class="lede">Tune the local API endpoint, review the last scan, and run a full sentiment analysis in one place.</p>
+        </div>
       </div>
-      <a class="back-link" href="popup.html">Back to Home</a>
+      <div class="header-actions">
+        <span class="pill">Local API</span>
+        <a class="back-link" href="popup.html">Back to popup</a>
+      </div>
     </header>
 
-    <section class="card">
-      <h2>Settings</h2>
-      <label class="field">
-        <span>API endpoint</span>
-        <input id="more-endpoint" type="text" value="http://127.0.0.1:5000/predict" />
-      </label>
-      <div class="actions">
-        <button id="save-settings" class="primary" type="button">Save settings</button>
-        <button id="reset-settings" class="secondary" type="button">Reset</button>
-      </div>
-      <p id="save-status" class="note">The extension uses your local Flask backend by default.</p>
+    <section class="hero-grid">
+      <article class="card card-quiet">
+        <h2>API settings</h2>
+        <label class="field">
+          <span>API endpoint</span>
+          <input id="more-endpoint" type="text" value="http://127.0.0.1:8000/predict" />
+        </label>
+        <label class="field">
+          <span>YouTube comments endpoint</span>
+          <input id="comments-endpoint" type="text" value="http://127.0.0.1:8000/youtube/comments" />
+        </label>
+        <div class="actions">
+          <button id="save-settings" class="primary" type="button">Save settings</button>
+          <button id="reset-settings" class="secondary" type="button">Reset</button>
+        </div>
+        <p id="save-status" class="note">The extension uses your local API by default.</p>
+      </article>
+
+      <article class="card">
+        <h2>Sentiment summary</h2>
+        <div class="summary-grid">
+          <div><span>Positive</span><strong id="positive">0</strong></div>
+          <div><span>Neutral</span><strong id="neutral">0</strong></div>
+          <div><span>Negative</span><strong id="negative">0</strong></div>
+        </div>
+        <div id="status" class="status idle">Ready to analyze</div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="card">
+        <h2>Comment input</h2>
+        <label class="field">
+          <span>Comments to analyze</span>
+          <textarea id="more-comments" placeholder="Paste comments or load the last scan from the popup"></textarea>
+        </label>
+        <div class="actions">
+          <button id="load-last" class="secondary" type="button">Load last scan</button>
+          <button id="analyze-comments" class="primary" type="button">Run analysis</button>
+          <button id="clear-comments" class="secondary" type="button">Clear</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Comment preview</h2>
+        <div id="preview" class="preview empty"><p>No comments loaded yet.</p></div>
+      </article>
     </section>
 
     <section class="card">
-      <h2>Analyze comments</h2>
-      <label class="field">
-        <span>Comments</span>
-        <textarea id="more-comments" placeholder="Paste comments or load the last scan from the popup"></textarea>
-      </label>
-      <div class="actions">
-        <button id="load-last" class="secondary" type="button">Load last scan</button>
-        <button id="analyze-comments" class="primary" type="button">Analyze comments</button>
-        <button id="clear-comments" class="secondary" type="button">Clear</button>
-      </div>
+      <h2>Analysis results</h2>
+      <div id="results" class="results empty"><p>No results yet.</p></div>
     </section>
 
     <section class="card">
-      <h2>Summary</h2>
-      <div class="summary-grid">
-        <div><span>Positive</span><strong id="positive">0</strong></div>
-        <div><span>Neutral</span><strong id="neutral">0</strong></div>
-        <div><span>Negative</span><strong id="negative">0</strong></div>
-      </div>
-      <div id="status" class="status idle">Ready to analyze</div>
-    </section>
-
-    <section class="card">
-      <h2>Captured preview</h2>
-      <div id="preview" class="preview empty"><p>No comments loaded yet.</p></div>
-    </section>
-
-    <section class="card">
-      <h2>How it works</h2>
+      <h2>Workflow</h2>
       <ol class="steps">
         <li>Open a YouTube video page.</li>
         <li>Click the extension icon and scan the current tab.</li>
         <li>The extension extracts visible comments.</li>
-        <li>Comments are sent to the local Flask API for sentiment scoring.</li>
-        <li>Results are displayed back in the popup.</li>
+        <li>Comments are sent to the local API for sentiment scoring.</li>
+        <li>Results appear here for deeper review.</li>
       </ol>
     </section>
 
     <section class="card split">
       <div>
-        <h2>Production notes</h2>
-        <p class="note">This extension is intentionally local-first. It avoids remote dependencies, making it easier to demo, debug, and deploy on a developer machine.</p>
+        <h2>Local-first notes</h2>
+        <p class="note">This extension is intentionally local-first. It avoids remote dependencies, making it easier to demo, debug, and run on a developer machine.</p>
       </div>
       <div>
-        <h2>Supported pages</h2>
+        <h2>Supported sources</h2>
         <ul class="pill-list">
           <li>YouTube watch pages</li>
           <li>YouTube Shorts</li>
           <li>YouTube Live pages</li>
         </ul>
       </div>
-    </section>
-
-    <section class="card">
-      <h2>Results</h2>
-      <div id="results" class="results empty"><p>No results yet.</p></div>
     </section>
   </main>
 

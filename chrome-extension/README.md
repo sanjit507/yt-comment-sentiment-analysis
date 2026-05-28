@@ -1,7 +1,7 @@
 Chrome Extension
 ================
 
-This folder contains a Manifest V3 extension that scans visible YouTube comments and sends them to the local Flask API at `http://127.0.0.1:5000/predict`.
+This folder contains a Manifest V3 extension that fetches YouTube comments via the backend API and sends them to the local sentiment API at `http://127.0.0.1:8000/predict`.
 
 Load it in Chrome
 -----------------
@@ -14,7 +14,7 @@ Load it in Chrome
 Usage
 -----
 
-1. Start the Flask app from the repo root.
+1. Start the FastAPI app from the repo root.
 2. Open a YouTube video page with comments loaded.
 3. Click the extension icon.
 4. Click Scan current tab, then Analyze pasted comments.

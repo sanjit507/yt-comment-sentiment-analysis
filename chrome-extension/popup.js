@@ -9,6 +9,8 @@ const statusStateNode = document.getElementById('status-state');
 const previewListNode = document.getElementById('preview-list');
 const previewMetaNode = document.getElementById('preview-meta');
 
+const DEFAULT_COMMENTS_ENDPOINT = 'http://127.0.0.1:8000/youtube/comments';
+
 function isYouTubeVideoUrl(url) {
   try {
     const parsedUrl = new URL(url);
@@ -46,7 +48,7 @@ function escapeHtml(value) {
 }
 
 function renderPreview(comments) {
-  const previewComments = comments.slice(0, 3);
+  const previewComments = comments.slice(0, 10);
 
   if (!previewComments.length) {
     previewMetaNode.textContent = 'No scan yet';
@@ -100,11 +102,23 @@ async function scanCurrentTab() {
       throw new Error('Please open a YouTube video page and try again.');
     }
 
-    const response = await chrome.tabs.sendMessage(tab.id, { action: 'extract_comments' });
-    const comments = response?.comments || [];
+    const { 'yt-comments-endpoint': commentsEndpoint } = await chrome.storage.local.get([
+      'yt-comments-endpoint',
+    ]);
+    const endpoint = commentsEndpoint || DEFAULT_COMMENTS_ENDPOINT;
+    const apiUrl = new URL(endpoint);
+    apiUrl.searchParams.set('video_url', tab.url || '');
+
+    const response = await fetch(apiUrl.toString());
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.detail || `Request failed with status ${response.status}`);
+    }
+
+    const comments = Array.isArray(payload.comments) ? payload.comments : [];
 
     if (!comments.length) {
-      throw new Error('No visible comments found on this tab');
+      throw new Error('No comments returned from the YouTube API');
     }
 
     chrome.storage.local.set({
@@ -116,7 +130,7 @@ async function scanCurrentTab() {
     lastScanCountNode.textContent = String(comments.length);
     lastScanSourceNode.textContent = 'YouTube';
     renderPreview(comments);
-    setStatus(`Captured ${comments.length} comments. Open More to analyze.`, 'success');
+    setStatus(`Captured ${comments.length} comments. Open Analysis to review.`, 'success');
   } catch (error) {
     setStatus(error.message, 'error');
   }

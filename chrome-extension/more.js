@@ -2,6 +2,7 @@ const endpointInput = document.getElementById('more-endpoint');
 const saveButton = document.getElementById('save-settings');
 const resetButton = document.getElementById('reset-settings');
 const saveStatus = document.getElementById('save-status');
+const commentsEndpointInput = document.getElementById('comments-endpoint');
 const commentsInput = document.getElementById('more-comments');
 const analyzeButton = document.getElementById('analyze-comments');
 const loadLastButton = document.getElementById('load-last');
@@ -13,7 +14,8 @@ const neutralNode = document.getElementById('neutral');
 const negativeNode = document.getElementById('negative');
 const statusNode = document.getElementById('status');
 
-const defaultEndpoint = 'http://127.0.0.1:5000/predict';
+const defaultEndpoint = 'http://127.0.0.1:8000/predict';
+const defaultCommentsEndpoint = 'http://127.0.0.1:8000/youtube/comments';
 
 const sentimentLabels = {
   '1': 'Positive',
@@ -77,7 +79,6 @@ function renderPreview(comments) {
 
   previewNode.className = 'preview';
   previewNode.innerHTML = comments
-    .slice(0, 5)
     .map((comment) => `<div class="preview-item">${escapeHtml(comment)}</div>`)
     .join('');
 }
@@ -105,8 +106,9 @@ function renderResults(items) {
   updateCounts(counts['1'], counts['0'], counts['-1']);
 }
 
-chrome.storage.local.get(['yt-sentiment-endpoint'], (result) => {
+chrome.storage.local.get(['yt-sentiment-endpoint', 'yt-comments-endpoint'], (result) => {
   endpointInput.value = result['yt-sentiment-endpoint'] || defaultEndpoint;
+  commentsEndpointInput.value = result['yt-comments-endpoint'] || defaultCommentsEndpoint;
 });
 
 chrome.storage.local.get(['yt-last-comments'], (result) => {
@@ -119,15 +121,23 @@ chrome.storage.local.get(['yt-last-comments'], (result) => {
 
 saveButton.addEventListener('click', () => {
   const endpoint = endpointInput.value.trim() || defaultEndpoint;
-  chrome.storage.local.set({ 'yt-sentiment-endpoint': endpoint }, () => {
+  const commentsEndpoint = commentsEndpointInput.value.trim() || defaultCommentsEndpoint;
+  chrome.storage.local.set({
+    'yt-sentiment-endpoint': endpoint,
+    'yt-comments-endpoint': commentsEndpoint,
+  }, () => {
     saveStatus.textContent = 'Settings saved locally in the browser.';
   });
 });
 
 resetButton.addEventListener('click', () => {
   endpointInput.value = defaultEndpoint;
-  chrome.storage.local.set({ 'yt-sentiment-endpoint': defaultEndpoint }, () => {
-    saveStatus.textContent = 'Settings reset to the local Flask API.';
+  commentsEndpointInput.value = defaultCommentsEndpoint;
+  chrome.storage.local.set({
+    'yt-sentiment-endpoint': defaultEndpoint,
+    'yt-comments-endpoint': defaultCommentsEndpoint,
+  }, () => {
+    saveStatus.textContent = 'Settings reset to the local API.';
   });
 });
 
