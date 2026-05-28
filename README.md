@@ -6,7 +6,8 @@ A YouTube comment sentiment analysis platform with a local ML pipeline, a Flask 
 Project Overview
 ----------------
 
-<img width="544" height="748" alt="Screenshot 2026-05-28 151327" src="https://github.com/user-attachments/assets/2c31347d-363d-4931-a68a-94f4fc45c7ef" />
+<img width="1896" height="940" alt="Screenshot 2026-05-28 151942" src="https://github.com/user-attachments/assets/c7cc8c99-7ce4-41d6-89e2-ce363ea68026" />
+
 
 
 <img width="1503" height="822" alt="Screenshot 2026-05-28 151351" src="https://github.com/user-attachments/assets/0a4204b8-ccf6-4279-bcb1-64fa949b539d" />
