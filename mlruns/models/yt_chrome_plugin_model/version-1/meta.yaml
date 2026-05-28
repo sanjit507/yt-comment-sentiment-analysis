@@ -1,0 +1,16 @@
+creation_timestamp: 1779950496027
+current_stage: Staging
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1779950496123
+model_id: m-c6352462e6e147cc843ac298077d0985
+name: yt_chrome_plugin_model
+run_id: 3eab73079768488bb3dbecd375df7e3c
+run_link: null
+source: models:/m-c6352462e6e147cc843ac298077d0985
+status: READY
+status_message: null
+storage_location: file:///D:/YouTube%20Comment%20Analysis/yt-comment-sentiment-analysis/mlruns/373786665100957719/models/m-c6352462e6e147cc843ac298077d0985/artifacts
+user_id: null
+version: 1
+workspace: default

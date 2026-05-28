@@ -1,0 +1,8 @@
+artifact_location: file:///D:/YouTube%20Comment%20Analysis/yt-comment-sentiment-analysis/mlruns/373786665100957719
+creation_time: 1779950458490
+experiment_id: '373786665100957719'
+last_update_time: 1779950458490
+lifecycle_stage: active
+name: dvc-pipeline-runs
+trace_location: null
+workspace: default
