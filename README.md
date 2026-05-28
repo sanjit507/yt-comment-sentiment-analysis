@@ -6,6 +6,30 @@ A YouTube comment sentiment analysis platform with a local ML pipeline, a Flask 
 Project Overview
 ----------------
 
+<img width="544" height="748" alt="Screenshot 2026-05-28 151327" src="https://github.com/user-attachments/assets/2c31347d-363d-4931-a68a-94f4fc45c7ef" />
+
+
+<img width="1503" height="822" alt="Screenshot 2026-05-28 151351" src="https://github.com/user-attachments/assets/0a4204b8-ccf6-4279-bcb1-64fa949b539d" />
+
+
+<img width="1526" height="791" alt="Screenshot 2026-05-28 151413" src="https://github.com/user-attachments/assets/973d3d1a-5f99-4bba-b265-b801c6e7050f" />
+
+
+<img width="1541" height="475" alt="Screenshot 2026-05-28 151425" src="https://github.com/user-attachments/assets/7bb6b945-cb74-4754-aa5a-df88871b0d5b" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 This project classifies YouTube comments into positive, neutral, and negative sentiment. The training and evaluation pipeline is managed with DVC and MLflow, the model is served through Flask, and the experience is exposed through a clean browser frontend plus a Chrome extension.
 
 It is designed to demonstrate an end-to-end applied machine learning workflow:
@@ -145,6 +169,12 @@ The request body should look like this:
 ```
 
 The response returns each comment with a predicted sentiment label.
+
+
+
+
+
+
 
 
 --------
