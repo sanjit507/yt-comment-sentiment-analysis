@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comment Sentiment Helper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="popup-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">YS</span>
+        <div>
+          <p class="eyebrow">Local API</p>
+          <h1>YouTube Sentiment</h1>
+        </div>
+      </div>
+      <button id="open-more" class="link-button" type="button">More</button>
+    </header>
+
+    <section class="hero-card">
+      <p class="hero-label">Production-ready workflow</p>
+      <p class="hero-copy">Scan the current YouTube video page and keep the full analysis experience on the More page for better readability.</p>
+      <div id="tab-state" class="tab-state">Checking current tab...</div>
+    </section>
+
+    <section class="quick-actions">
+      <button id="scan" class="primary" type="button">Scan current tab</button>
+      <button id="open-more-2" class="secondary" type="button">Open More</button>
+    </section>
+
+    <div class="summary home-summary">
+      <div><span>Last scan</span><strong id="last-scan-count">0</strong></div>
+      <div><span>Source</span><strong id="last-scan-source">-</strong></div>
+      <div><span>Status</span><strong id="status-state">Ready</strong></div>
+    </div>
+
+    <div id="status" class="status idle">Ready</div>
+
+    <section class="preview-card">
+      <div class="preview-head">
+        <h2>Captured preview</h2>
+        <span id="preview-meta" class="preview-meta">No scan yet</span>
+      </div>
+      <div id="preview-list" class="preview-list empty">
+        <p>Scan a YouTube video to see the first comments here.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

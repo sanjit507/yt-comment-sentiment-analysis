@@ -1,7 +1,52 @@
 yt-comment-sentiment-analysis
 ==============================
 
-A Small chrome plugin to detect youtube comment sentiment
+A YouTube comment sentiment analysis platform with a local ML pipeline, a Flask inference API, a standalone frontend, and a Chrome extension for browser-side workflows.
+
+Project Overview
+----------------
+
+This project classifies YouTube comments into positive, neutral, and negative sentiment. The training and evaluation pipeline is managed with DVC and MLflow, the model is served through Flask, and the experience is exposed through a clean browser frontend plus a Chrome extension.
+
+It is designed to demonstrate an end-to-end applied machine learning workflow:
+
+* data ingestion and preprocessing
+* feature extraction with TF-IDF
+* LightGBM model training and evaluation
+* experiment tracking and model registry with MLflow
+* local inference through a REST API
+* a browser frontend and Chrome extension for real usage
+
+Tech Stack
+----------
+
+* Python
+* Flask
+* scikit-learn
+* LightGBM
+* MLflow
+* DVC
+* pandas, NumPy, NLTK
+* HTML, CSS, JavaScript
+* Chrome Extension Manifest V3
+
+How It Works
+------------
+
+1. Raw comment data is loaded into the pipeline and cleaned.
+2. Text is normalized, tokenized, and vectorized with TF-IDF.
+3. A LightGBM classifier is trained on the processed features.
+4. MLflow logs the experiment, model artifact, and registry version locally.
+5. The Flask app loads the registered model and exposes `/predict`.
+6. The frontend and Chrome extension send comment text to the API and display sentiment results.
+
+Why It Stands Out
+-----------------
+
+* End-to-end machine learning product, not just a notebook.
+* Local-first setup that works without a remote MLflow server.
+* Separate frontend and Chrome extension for practical deployment scenarios.
+* Clear project structure that is easy for reviewers and recruiters to scan.
 
 Project Organization
 ------------
@@ -28,6 +73,9 @@ Project Organization
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
     │   └── figures        <- Generated graphics and figures to be used in reporting
     │
+    ├── frontend           <- Standalone web frontend for sentiment analysis
+    ├── chrome-extension   <- Manifest V3 Chrome extension for YouTube comments
+    │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
     │
@@ -50,6 +98,53 @@ Project Organization
     │       └── visualize.py
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+
+Frontend and Chrome extension
+----------------------------
+
+The Flask API stays in `flask_app/`. The `frontend/` folder contains a standalone static UI that talks to `http://127.0.0.1:5000/predict`.
+
+To run it locally, start the Flask app first, then open `frontend/index.html` in a browser or serve the folder with a simple static server.
+
+The `chrome-extension/` folder contains a Manifest V3 extension that can scan visible YouTube comments on the current page and send them to the local API for prediction.
+
+The extension now includes a polished home popup and a separate More page for endpoint settings, usage guidance, and production notes.
+
+To load the extension, open Chrome's Extensions page, enable Developer Mode, and load the `chrome-extension/` folder as an unpacked extension.
+
+Local Setup
+-----------
+
+1. Create and activate your virtual environment.
+2. Install dependencies from `requirements.txt`.
+3. Run the DVC pipeline if you want to rebuild the model artifacts.
+4. Start the Flask API from the repo root:
+
+     ```powershell
+     python flask_app/app.py
+     ```
+
+5. Open `frontend/index.html` in a browser or serve the `frontend/` folder locally.
+6. Load `chrome-extension/` as an unpacked extension in Chrome.
+
+API Notes
+---------
+
+The frontend and extension call the local API endpoint:
+
+```text
+http://127.0.0.1:5000/predict
+```
+
+The request body should look like this:
+
+```json
+{
+    "comments": ["This video is great!", "I absolutely hate this video"]
+}
+```
+
+The response returns each comment with a predicted sentiment label.
 
 
 --------

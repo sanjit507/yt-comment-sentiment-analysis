@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Comment Sentiment Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Local MLflow model</p>
+        <h1>YouTube Comment Sentiment Studio</h1>
+        <p class="lede">
+          Paste comments, analyze them against the Flask API, and inspect a clean sentiment breakdown in one place.
+        </p>
+      </div>
+      <div class="hero-card">
+        <div class="stat">
+          <span>API</span>
+          <strong>127.0.0.1:5000</strong>
+        </div>
+        <div class="stat">
+          <span>Model</span>
+          <strong>yt_chrome_plugin_model</strong>
+        </div>
+        <div class="stat">
+          <span>Transport</span>
+          <strong>JSON over fetch</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel input-panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Input</p>
+            <h2>Analyze comments</h2>
+          </div>
+          <label class="field compact">
+            <span>API endpoint</span>
+            <input id="endpoint" type="text" value="http://127.0.0.1:5000/predict" />
+          </label>
+        </div>
+
+        <label class="field textarea-field">
+          <span>Comments</span>
+          <textarea id="comments" placeholder="One comment per line"></textarea>
+        </label>
+
+        <div class="chips">
+          <button class="chip" data-sample="This video is great!\nI loved the edit and pacing.">Positive sample</button>
+          <button class="chip" data-sample="This video is okay.\nNothing special, but not bad either.">Neutral sample</button>
+          <button class="chip" data-sample="I absolutely hate this video.\nIt wasted my time.">Negative sample</button>
+        </div>
+
+        <div class="actions">
+          <button id="analyze" class="primary">Analyze comments</button>
+          <button id="clear" class="secondary">Clear</button>
+        </div>
+
+        <p class="hint">
+          Tip: the endpoint expects a JSON body like <code>{"comments": ["comment 1", "comment 2"]}</code>.
+        </p>
+      </article>
+
+      <article class="panel results-panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Results</p>
+            <h2>Sentiment breakdown</h2>
+          </div>
+          <div id="status" class="status idle">Waiting for input</div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card positive">
+            <span>Positive</span>
+            <strong id="positive-count">0</strong>
+          </div>
+          <div class="summary-card neutral">
+            <span>Neutral</span>
+            <strong id="neutral-count">0</strong>
+          </div>
+          <div class="summary-card negative">
+            <span>Negative</span>
+            <strong id="negative-count">0</strong>
+          </div>
+        </div>
+
+        <div id="results" class="results empty">
+          <p>Run an analysis to see each comment classified here.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
