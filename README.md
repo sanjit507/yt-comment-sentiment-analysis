@@ -6,6 +6,11 @@ A YouTube comment sentiment analysis platform with a local ML pipeline, a FastAP
 Project Overview
 ----------------
 
+<img width="1536" height="1024" alt="ChatGPT Image Jul 13, 2026, 04_04_11 PM" src="https://github.com/user-attachments/assets/f4169941-1de1-4579-b700-0607e3a7665f" />
+
+
+
+
 <img width="1904" height="953" alt="Screenshot 2026-05-28 153725" src="https://github.com/user-attachments/assets/2d2603f4-a8e1-4a76-8d72-b5dbf26c3fd7" />
 
 <img width="1657" height="787" alt="Screenshot 2026-05-28 154006" src="https://github.com/user-attachments/assets/e5c920e2-162e-4569-993c-05ce84148598" />
